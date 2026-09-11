@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <title>DB Ansagen Generator Pro</title>
+    <meta name="description" content="Professioneller Simulator für automatisierte Bahn-Ansagen mit KI-Sprachsynthese und DSP-Akustik.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        db: {
+                            red: '#e3001b',
+                            hover: '#ff243e',
+                            bg: '#000000',
+                            panel: '#121212',
+                            border: '#3a3a3a'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap');
+        
+        :root {
+            color-scheme: dark;
+        }
+
+        body {
+            background-color: theme('colors.db.bg');
+            color: #ffffff;
+            /* Subtiles technisches Punktemuster für den Hintergrund */
+            background-image: radial-gradient(theme('colors.db.border') 1px, transparent 1px);
+            background-size: 24px 24px;
+            min-height: 100vh;
+        }
+
+        /* Einheitliches Styling für alle Eingabefelder */
+        .form-control {
+            background-color: #1a1a1a;
+            border: 2px solid theme('colors.db.border');
+            color: #ffffff;
+            transition: all 0.2s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #ffffff;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+            background-color: #222222;
+        }
+
+        .form-control option, .form-control optgroup {
+            background-color: theme('colors.db.panel');
+            color: white;
+        }
+
+        /* Custom Range Slider (Perfektioniert) */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+            width: 100%;
+            height: 24px;
+        }
+        input[type=range]:focus { outline: 2px solid #ffffff; outline-offset: 2px; border-radius: 4px; }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: theme('colors.db.border');
+            border-radius: 3px;
+            transition: background 0.2s;
+        }
+        input[type=range]:hover::-webkit-slider-runnable-track {
+            background: #555555;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 2px solid theme('colors.db.red');
+            cursor: pointer;
+            margin-top: -7px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.8);
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: theme('colors.db.border'); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #666666; }
+
+        /* Animationen */
+        .wave-container { display: flex; align-items: center; justify-content: center; gap: 4px; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        .wave-container.active { opacity: 1; }
+        .wave-bar { width: 3px; height: 10px; background-color: rgba(255,255,255,0.9); border-radius: 2px; animation: wave 1s ease-in-out infinite; }
+        .wave-bar:nth-child(2) { animation-delay: 0.1s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.2s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.3s; }
+        .wave-bar:nth-child(5) { animation-delay: 0.4s; }
+
+        @keyframes wave {
+            0%, 100% { height: 10px; }
+            50% { height: 24px; }
+        }
+    </style>
+</head>
+
+<body class="p-4 md:p-6 lg:p-8 flex flex-col items-center justify-center font-sans antialiased">
+
+    <!-- Header / Branding -->
+    <header class="w-full max-w-7xl flex items-center justify-between mb-8 px-2">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-db-red flex items-center justify-center shadow-lg shadow-red-900/20">
+                <i class="fa-solid fa-train text-white text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-white">Ansagen Generator <span class="text-db-red">Pro</span></h1>
+                <p class="text-xs text-gray-300 font-medium tracking-widest uppercase mt-0.5">Automatisches PA-System V3</p>
+            </div>
+        </div>
+        <div class="hidden sm:flex items-center gap-2 text-xs font-bold text-emerald-300 bg-emerald-400/10 px-4 py-2 rounded-full border border-emerald-400/30">
+            <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+            SYSTEM BEREIT
+        </div>
+    </header>
+
+    <main class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Input & Configuration -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            
+            <!-- Section 1: Content -->
+            <section class="bg-db-panel border border-db-border rounded-2xl shadow-xl overflow-hidden">
+                <div class="border-b border-db-border bg-black/40 px-6 py-4 flex items-center gap-3">
+                    <i class="fa-solid fa-align-left text-gray-300"></i>
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wide">Text & Regieanweisung</h2>
+                </div>
+                
+                <div class="p-6 space-y-6">
+                    <!-- Quick Selectors -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div class="space-y-2">
+                            <label class="block text-[12px] text-gray-100 font-bold uppercase tracking-wider">
+                                <i class="fa-solid fa-folder-open mr-1"></i> Szenario laden
+                            </label>
+                            <select id="scenario-select" class="w-full p-2.5 rounded-lg text-sm form-control font-medium focus:ring-2 focus:ring-white">
+                                <option value="custom">-- Freitext --</option>
+                                <optgroup label="Bahnhof">
+                                    <option value="einfahrt" selected>Reguläre Einfahrt</option>
+                                    <option value="verspaetung">Verspätung</option>
+                                    <option value="ausfall">Zugausfall</option>
+                                    <option value="gleiswechsel">Gleiswechsel</option>
+                                </optgroup>
+                                <optgroup label="Im Zug">
+                                    <option value="begruessung">Begrüßung</option>
+                                    <option value="naechster_halt">Nächster Halt</option>
+                                    <option value="bistro">Bordbistro</option>
+                                    <option value="ticketkontrolle">Ticketkontrolle</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-[12px] text-gray-100 font-bold uppercase tracking-wider">
+                                <i class="fa-solid fa-masks-theater mr-1"></i> Stil Vorlage
+                            </label>
+                            <select id="style-select" class="w-full p-2.5 rounded-lg text-sm form-control font-medium focus:ring-2 focus:ring-white">
+                                <option value="sachlich" selected>Sachlich / Offiziell</option>
+                                <option value="freundlich">Freundlich / Warm</option>
+                                <option value="dringlich">Dringlich (Störung)</option>
+                                <option value="genervt">Leicht genervt / Monoton</option>
+                                <option value="hektisch">Hektisch / Gestresst</option>
+                                <option value="fluesternd">Leise / Flüsternd</option>
+                                <option value="streng">Streng / Autoritär</option>
+                                <option value="custom">-- Eigener Stil --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Text Areas -->
+                    <div class="space-y-4 pt-2 border-t border-db-border/80">
+                        <div class="space-y-2">
+                            <label class="flex justify-between items-center text-[12px] text-gray-100 font-bold uppercase tracking-wider">
+                                <span><i class="fa-solid fa-clapperboard mr-1"></i> Regieanweisung (Prompt)</span>
+                            </label>
+                            <input type="text" id="final-style-input" class="w-full p-3 rounded-lg text-sm form-control font-medium text-white placeholder-gray-500 focus:ring-2 focus:ring-white" placeholder="z.B. Sprich sehr schnell und leicht panisch...">
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <label class="flex justify-between items-center text-[12px] text-gray-100 font-bold uppercase tracking-wider">
+                                <span><i class="fa-solid fa-comment-dots mr-1"></i> Ansagetext</span>
+                                <span class="text-gray-300 font-normal normal-case tracking-normal"><i class="fa-solid fa-circle-info mr-1"></i>Punkte für Pausen</span>
+                            </label>
+                            <textarea id="final-text-input" rows="4" class="w-full p-4 rounded-lg text-sm form-control resize-none leading-relaxed text-white placeholder-gray-500 focus:ring-2 focus:ring-white" placeholder="Geben Sie hier den Text der Ansage ein..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 2: Audio DSP -->
+            <section class="bg-db-panel border border-db-border rounded-2xl shadow-xl overflow-hidden">
+                <div class="border-b border-db-border bg-black/40 px-6 py-4 flex items-center gap-3">
+                    <i class="fa-solid fa-sliders text-gray-300"></i>
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wide">Akustik & Effekte</h2>
+                </div>
+                
+                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Environment & Toggles -->
+                    <div class="space-y-5">
+                        <div class="space-y-2">
+                            <label class="block text-[12px] text-gray-100 font-bold uppercase tracking-wider">
+                                <i class="fa-solid fa-building mr-1"></i> Umgebung (Raum / EQ)
+                            </label>
+                            <select id="env-select" class="w-full p-2.5 rounded-lg text-sm form-control font-medium focus:ring-2 focus:ring-white">
+                                <option value="bahnhof">Bahnhofshalle (Groß)</option>
+                                <option value="zug">Bordlautsprecher (Zug)</option>
+                            </select>
+                        </div>
+
+                        <div class="space-y-3 pt-2">
+                            <label class="flex items-center justify-between cursor-pointer group p-3 rounded-xl border-2 border-db-border bg-black/30 hover:bg-black/60 transition-colors focus-within:border-white">
+                                <span class="text-sm text-gray-100 font-medium"><i class="fa-regular fa-bell mr-2 text-gray-300"></i>DB Gong abspielen</span>
+                                <div class="relative">
+                                    <input type="checkbox" id="gong-toggle" class="sr-only peer" checked>
+                                    <div class="w-10 h-5 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-db-red peer-focus:ring-2 peer-focus:ring-white"></div>
+                                </div>
+                            </label>
+                            
+                            <label class="flex items-center justify-between cursor-pointer group p-3 rounded-xl border-2 border-db-border bg-black/30 hover:bg-black/60 transition-colors focus-within:border-white">
+                                <span class="text-sm text-gray-100 font-medium"><i class="fa-solid fa-wind mr-2 text-gray-300"></i>Hintergrund-Atmo</span>
+                                <div class="relative">
+                                    <input type="checkbox" id="atmo-toggle" class="sr-only peer" checked>
+                                    <div class="w-10 h-5 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-db-red peer-focus:ring-2 peer-focus:ring-white"></div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Sliders -->
+                    <div class="space-y-6 flex flex-col justify-center">
+                        <div>
+                            <div class="flex justify-between mb-1.5">
+                                <label class="text-[12px] text-gray-100 uppercase tracking-wider font-bold">Tempo</label>
+                                <span id="speed-val" class="text-[12px] text-gray-200 font-mono bg-black/50 border border-gray-700 px-2 py-0.5 rounded">1.00x</span>
+                            </div>
+                            <input type="range" id="speed-slider" min="0.7" max="1.5" step="0.05" value="1.0">
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between mb-1.5">
+                                <label class="text-[12px] text-gray-100 uppercase tracking-wider font-bold">Raumhall</label>
+                                <span id="fx-val" class="text-[12px] text-gray-200 font-mono bg-black/50 border border-gray-700 px-2 py-0.5 rounded">60%</span>
+                            </div>
+                            <input type="range" id="fx-slider" min="0" max="100" step="1" value="60">
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between mb-1.5">
+                                <label class="text-[12px] text-gray-100 uppercase tracking-wider font-bold">Verzerrung</label>
+                                <span id="dist-val" class="text-[12px] text-gray-200 font-mono bg-black/50 border border-gray-700 px-2 py-0.5 rounded">5%</span>
+                            </div>
+                            <input type="range" id="dist-slider" min="0" max="100" step="1" value="5">
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Right Column: Output & Controls -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <section class="bg-db-panel border border-db-border rounded-2xl shadow-xl flex flex-col h-full overflow-hidden">
+                <div class="border-b border-db-border bg-black/40 px-6 py-4 flex items-center gap-3">
+                    <i class="fa-solid fa-headset text-gray-300"></i>
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wide">Stimme & Ausgabe</h2>
+                </div>
+                
+                <div class="p-6 flex flex-col h-full space-y-6">
+                    <!-- Voice Selection -->
+                    <div class="space-y-2">
+                        <div class="flex gap-2">
+                            <select id="voice-select" class="flex-grow p-2.5 rounded-lg text-sm form-control font-bold focus:ring-2 focus:ring-white">
+                                <optgroup label="Weiblich">
+                                    <option value="Kore">Ansagerin (Blechelse)</option>
+                                    <option value="Aoede">Zugbegleiterin</option>
+                                    <option value="Puck">Service Counter</option>
+                                </optgroup>
+                                <optgroup label="Männlich">
+                                    <option value="Charon">Zugchef (Klar)</option>
+                                    <option value="Algenib">Lokführer (Rau)</option>
+                                    <option value="Fenrir">Leitstelle (Dynamisch)</option>
+                                </optgroup>
+                            </select>
+                            <button id="preview-btn" class="bg-gray-800 hover:bg-gray-700 text-white border-2 border-db-border px-4 rounded-lg text-sm font-bold transition-colors flex items-center justify-center focus:outline-none focus:border-white focus:ring-2 focus:ring-white/50" title="Vorschau (Aktueller Stil)">
+                                <i class="fa-solid fa-volume-low mr-2"></i> Test
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Terminal / Log -->
+                    <div class="flex-grow flex flex-col min-h-[220px]">
+                        <label class="block text-[12px] text-gray-100 mb-2 font-bold uppercase tracking-wider">
+                            System Log
+                        </label>
+                        <div class="flex-grow bg-[#000000] border-2 border-db-border rounded-xl p-4 font-mono text-[12px] overflow-y-auto shadow-inner" id="log-console-container">
+                            <div id="log-console" class="space-y-1.5 text-gray-200">
+                                <div class="text-emerald-400 font-bold"><i class="fa-solid fa-angle-right mr-1"></i> System bereit.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Play Button -->
+                    <button id="play-btn" class="w-full bg-db-red hover:bg-db-hover text-white font-bold text-lg py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-all duration-200 shadow-lg shadow-red-900/40 focus:outline-none focus:ring-4 focus:ring-white focus:ring-offset-2 focus:ring-offset-db-panel disabled:opacity-50 disabled:cursor-not-allowed group relative overflow-hidden">
+                        <i id="play-icon" class="fa-solid fa-play group-hover:scale-110 transition-transform"></i>
+                        <span id="play-text">Ansage Starten</span>
+                        
+                        <div id="play-waves" class="wave-container absolute inset-0 bg-db-hover">
+                            <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                        </div>
+                    </button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        const scenarioSelect = document.getElementById('scenario-select');
+        const styleSelect = document.getElementById('style-select');
+        const finalStyleInput = document.getElementById('final-style-input');
+        const finalTextInput = document.getElementById('final-text-input');
+        
+        const envSelect = document.getElementById('env-select');
+        const gongToggle = document.getElementById('gong-toggle');
+        const atmoToggle = document.getElementById('atmo-toggle');
+        const speedSlider = document.getElementById('speed-slider');
+        const fxSlider = document.getElementById('fx-slider');
+        const distSlider = document.getElementById('dist-slider');
+        
+        const voiceSelect = document.getElementById('voice-select');
+        
+        const playBtn = document.getElementById('play-btn');
+        const previewBtn = document.getElementById('preview-btn');
+        const playText = document.getElementById('play-text');
+        const playIcon = document.getElementById('play-icon');
+        const playWaves = document.getElementById('play-waves');
+        
+        const logConsole = document.getElementById('log-console');
+        const logConsoleContainer = document.getElementById('log-console-container');
+
+        let isPlaying = false;
+        let audioCtx = null;
+        let activeNodes = []; 
+
+        const scenarios = {
+            'einfahrt': "Gleis 4. Einfahrt. I C E 8 7 2. Nach. Berlin Ostbahnhof. Abfahrt 15 Uhr 14. Vorsicht bei der Einfahrt.",
+            'verspaetung': "Ihre Information zu. Intercity Express 7 3. Nach Basel S B B. Heute circa 15 Minuten später. Grund dafür ist eine Verzögerung im Betriebsablauf. Wir bitten um Entschuldigung.",
+            'ausfall': "Achtung am Gleis 2. Der Regionalexpress 7 nach Krefeld Hauptbahnhof. Fällt heute leider aus. Wir bitten um Entschuldigung.",
+            'gleiswechsel': "Achtung am Gleis 3. Der I C E 7 2 1 nach Frankfurt. Fährt heute abweichend von Gleis 5 ein. Wir bitten um Entschuldigung.",
+            'begruessung': "Sehr geehrte Fahrgäste. Wir begrüßen Sie herzlich im I C E nach München. Unser Zugteam wünscht Ihnen eine angenehme Reise.",
+            'naechster_halt': "Nächster Halt: Frankfurt Flughafen Fernbahnhof. Ausstieg in Fahrtrichtung. Links.",
+            'bistro': "Verehrte Fahrgäste. Wir begrüßen Sie herzlich in unserem Bordbistro. Heute empfehlen wir frisch gebrühten Kaffee und Snacks. Wir freuen uns auf Ihren Besuch.",
+            'ticketkontrolle': "Guten Tag. Die Zugbegleiter führen nun im gesamten Zug die Fahrscheinkontrolle durch. Bitte halten Sie Ihre Fahrkarten bereit."
+        };
+
+        const styles = {
+            'sachlich': "Sprich sehr sachlich, klar, deutlich und mit offizieller, formeller Betonung.",
+            'freundlich': "Sprich sehr freundlich, warm, lächelnd, einladend und hilfsbereit.",
+            'dringlich': "Sprich ernst, bestimmend, leicht bedauernd bezüglich der aktuellen Situation.",
+            'genervt': "Sprich monoton, leicht genervt, abgebrüht, als hättest du das schon 100 mal gesagt.",
+            'hektisch': "Sprich etwas schneller, hektisch und leicht gestresst.",
+            'fluesternd': "Sprich sehr leise, flüsternd, rücksichtsvoll und sanft.",
+            'streng': "Sprich sehr streng, laut, autoritär, bestimmend und unmissverständlich."
+        };
+
+        speedSlider.addEventListener('input', e => document.getElementById('speed-val').innerText = parseFloat(e.target.value).toFixed(2) + 'x');
+        fxSlider.addEventListener('input', e => document.getElementById('fx-val').innerText = e.target.value + '%');
+        distSlider.addEventListener('input', e => document.getElementById('dist-val').innerText = e.target.value + '%');
+
+        scenarioSelect.addEventListener('change', (e) => {
+            if (scenarios[e.target.value]) finalTextInput.value = scenarios[e.target.value];
+        });
+        styleSelect.addEventListener('change', (e) => {
+            if (styles[e.target.value]) finalStyleInput.value = styles[e.target.value];
+        });
+
+        // Initialize Defaults
+        finalTextInput.value = scenarios['einfahrt'];
+        finalStyleInput.value = styles['sachlich'];
+
+        function log(msg, type='info') {
+            const time = new Date().toLocaleTimeString('de-DE', { hour12: false });
+            let color = 'text-gray-200';
+            
+            if (type === 'error') color = 'text-red-400 font-bold';
+            if (type === 'success') color = 'text-emerald-400 font-bold';
+            if (type === 'warn') color = 'text-amber-400 font-bold';
+            
+            const entry = document.createElement('div');
+            entry.className = color;
+            entry.innerHTML = `<span class="text-gray-400 font-normal mr-1">[${time}]</span> ${msg}`;
+            logConsole.appendChild(entry);
+            logConsoleContainer.scrollTop = logConsoleContainer.scrollHeight;
+        }
+
+        function base64ToArrayBuffer(base64) {
+            const binaryString = window.atob(base64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+            return bytes.buffer;
+        }
+
+        function pcmToWav(pcm16, sampleRate) {
+            const buffer = new ArrayBuffer(44 + pcm16.byteLength);
+            const view = new DataView(buffer);
+            const writeString = (view, offset, string) => {
+                for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+            };
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + pcm16.byteLength, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true); 
+            writeString(view, 36, 'data');
+            view.setUint32(40, pcm16.byteLength, true);
+            new Int16Array(buffer, 44).set(pcm16);
+            return new Blob([buffer], { type: 'audio/wav' });
+        }
+
+        function makeDistortionCurve(amount) {
+            const k = typeof amount === 'number' ? amount * 2 : 50; 
+            const n_samples = 44100;
+            const curve = new Float32Array(n_samples);
+            const deg = Math.PI / 180;
+            for (let i = 0; i < n_samples; ++i ) {
+                const x = i * 2 / n_samples - 1;
+                curve[i] = ( 3 + k ) * x * 20 * deg / ( Math.PI + k * Math.abs(x) );
+            }
+            return curve;
+        }
+
+        function createReverb(ctx) {
+            const length = ctx.sampleRate * 2.5; 
+            const impulse = ctx.createBuffer(2, length, ctx.sampleRate);
+            for (let i = 0; i < 2; i++) {
+                const channel = impulse.getChannelData(i);
+                for (let j = 0; j < length; j++) {
+                    channel[j] = (Math.random() * 2 - 1) * Math.exp(-j / (ctx.sampleRate * 0.5));
+                }
+            }
+            const convolver = ctx.createConvolver();
+            convolver.buffer = impulse;
+            return convolver;
+        }
+
+        async function playOriginalGong(env, ctx, destinationNode) {
+            return new Promise(resolve => {
+                const now = ctx.currentTime;
+                
+                // Helper for clean, bright sine waves (like modern PA systems)
+                function playTone(freq, startTime, duration, vol) {
+                    const osc = ctx.createOscillator();
+                    osc.type = 'sine'; // Glasklarer Klang
+                    osc.frequency.value = freq;
+                    
+                    const gain = ctx.createGain();
+                    
+                    // Attack (schnell, aber nicht klickend)
+                    gain.gain.setValueAtTime(0, startTime);
+                    gain.gain.linearRampToValueAtTime(vol, startTime + 0.02);
+                    // Release (natürliches Ausklingen)
+                    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+                    
+                    osc.connect(gain);
+                    gain.connect(destinationNode);
+                    
+                    osc.start(startTime);
+                    osc.stop(startTime + duration);
+                    activeNodes.push(osc);
+                }
+
+                if (env === 'bahnhof') {
+                    // Klassischer, heller Bahnhofs-Dreiklang (G - E - C)
+                    const v = 0.5;
+                    playTone(783.99, now,       2.5, v); // G5
+                    playTone(659.25, now + 0.6, 2.5, v); // E5
+                    playTone(523.25, now + 1.2, 4.0, v); // C5
+                    
+                    setTimeout(resolve, 3000); 
+                } else {
+                    // DB Zug-Gong "D" und "B" (D5 und B4)
+                    const v = 0.4;
+                    
+                    // Kurzes Mikrofon-Einschalt-Knacken
+                    const click = ctx.createOscillator();
+                    const clickGain = ctx.createGain();
+                    click.type = 'square';
+                    click.frequency.setValueAtTime(100, now);
+                    click.frequency.exponentialRampToValueAtTime(10, now + 0.02);
+                    clickGain.gain.setValueAtTime(0, now);
+                    clickGain.gain.linearRampToValueAtTime(0.02, now + 0.01);
+                    clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+                    click.connect(clickGain);
+                    clickGain.connect(destinationNode);
+                    click.start(now);
+                    click.stop(now + 0.03);
+                    activeNodes.push(click);
+
+                    // Die zwei Töne: schnelles D, langes B
+                    setTimeout(() => {
+                        playTone(587.33, ctx.currentTime, 1.2, v);       // D5
+                        playTone(493.88, ctx.currentTime + 0.35, 2.5, v); // B4
+                    }, 50);
+                    
+                    setTimeout(resolve, 2000);
+                }
+            });
+        }
+
+        function startAtmo(ctx, env, destination) {
+            const bufferSize = ctx.sampleRate * 2;
+            const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            let lastOut = 0;
+            // Brown Noise Generator (Tiefes Rauschen)
+            for (let i = 0; i < bufferSize; i++) {
+                const white = Math.random() * 2 - 1;
+                output[i] = (lastOut + (0.02 * white)) / 1.02;
+                lastOut = output[i];
+                output[i] *= 3.5; 
+            }
+            const noiseSrc = ctx.createBufferSource();
+            noiseSrc.buffer = noiseBuffer;
+            noiseSrc.loop = true;
+            
+            const filter = ctx.createBiquadFilter();
+            if(env === 'bahnhof') {
+                filter.type = 'bandpass';
+                filter.frequency.value = 400; // Dumpferes Hall-Rauschen
+            } else {
+                filter.type = 'lowpass';
+                filter.frequency.value = 150; // Zug-Rumpeln
+            }
+            
+            const gain = ctx.createGain();
+            gain.gain.value = 0; 
+
+            noiseSrc.connect(filter);
+            filter.connect(gain);
+            gain.connect(destination);
+            
+            noiseSrc.start();
+            activeNodes.push(noiseSrc);
+            
+            gain.gain.linearRampToValueAtTime(env === 'bahnhof' ? 0.3 : 0.6, ctx.currentTime + 1);
+            return { source: noiseSrc, gainNode: gain };
+        }
+
+        async function fetchAI_Audio(text, stylePrompt, voiceId, ctx) {
+            log(`Generiere Audio (${voiceId})...`, 'info');
+            
+            const prompt = `Lies den folgenden Text exakt nach dieser Regieanweisung vor: "${stylePrompt}". \n\nZu lesender Text: ${text}`;
+            const apiKey = ""; // API Key handled automatically by the environment
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseModalities: ["AUDIO"],
+                    speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceId } } }
+                },
+                model: "gemini-2.5-flash-preview-tts"
+            };
+            
+            const response = await fetch(url, { method: 'POST', body: JSON.stringify(payload) });
+            if (!response.ok) throw new Error("API-Verbindungsfehler.");
+            
+            const result = await response.json();
+            const part = result?.candidates?.[0]?.content?.parts?.[0];
+            if (!part || !part.inlineData) throw new Error("Keine Audiodaten erhalten.");
+            
+            const sampleRateMatch = part.inlineData.mimeType.match(/rate=(\d+)/);
+            const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 24000;
+            
+            const pcmData = base64ToArrayBuffer(part.inlineData.data);
+            const wavBlob = pcmToWav(new Int16Array(pcmData), sampleRate);
+            return await ctx.decodeAudioData(await wavBlob.arrayBuffer());
+        }
+
+        function stopEngine() {
+            activeNodes.forEach(node => {
+                try { node.stop(); } catch(e){}
+                try { node.disconnect(); } catch(e){}
+            });
+            activeNodes = [];
+            isPlaying = false;
+            
+            playBtn.disabled = false;
+            previewBtn.disabled = false;
+            playIcon.style.display = 'inline-block';
+            playText.style.display = 'inline-block';
+            playWaves.classList.remove('active');
+        }
+
+        async function executeAudioPipeline(text, isPreview = false) {
+            if (isPlaying) return;
+            if (!text.trim()) {
+                log("Bitte einen Text eingeben.", "warn");
+                return;
+            }
+
+            try {
+                isPlaying = true;
+                playBtn.disabled = true;
+                previewBtn.disabled = true;
+                if(!isPreview) {
+                    playIcon.style.display = 'none';
+                    playText.style.display = 'none';
+                    playWaves.classList.add('active');
+                }
+                
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') await audioCtx.resume();
+
+                const voiceId = voiceSelect.value;
+                const env = envSelect.value;
+                const speedVal = parseFloat(speedSlider.value);
+                const fxVal = parseInt(fxSlider.value, 10) / 100;
+                const distVal = parseInt(distSlider.value, 10);
+                const styleDir = finalStyleInput.value.trim() || "Sachlich";
+
+                // 1. Fetch AI Audio
+                const audioBuffer = await fetchAI_Audio(text, styleDir, voiceId, audioCtx);
+                
+                // 2. Build Effects Graph
+                const mainOut = audioCtx.createGain();
+                const effectInput = audioCtx.createGain();
+                
+                // Distortion
+                const distortionNode = audioCtx.createWaveShaper();
+                if(distVal > 0 && !isPreview) {
+                    distortionNode.curve = makeDistortionCurve(distVal);
+                    distortionNode.oversample = '4x';
+                }
+                effectInput.connect(distortionNode);
+
+                // Reverb & EQ
+                if (!isPreview) {
+                    if (env === 'bahnhof') {
+                        const convolver = createReverb(audioCtx);
+                        const lowpass = audioCtx.createBiquadFilter();
+                        lowpass.type = 'lowpass';
+                        lowpass.frequency.value = 3500;
+
+                        const dry = audioCtx.createGain();
+                        dry.gain.value = 1.0 - (fxVal * 0.4);
+                        const wet = audioCtx.createGain();
+                        wet.gain.value = fxVal * 1.5;
+
+                        distortionNode.connect(lowpass);
+                        lowpass.connect(dry);
+                        lowpass.connect(convolver);
+                        convolver.connect(wet);
+
+                        dry.connect(mainOut);
+                        wet.connect(mainOut);
+                    } else {
+                        // Zug (Bordlautsprecher EQ)
+                        const highpass = audioCtx.createBiquadFilter();
+                        highpass.type = 'highpass';
+                        highpass.frequency.value = 300; 
+                        
+                        const peaking = audioCtx.createBiquadFilter();
+                        peaking.type = 'peaking';
+                        peaking.frequency.value = 2500;
+                        peaking.gain.value = fxVal * 4; 
+
+                        distortionNode.connect(highpass);
+                        highpass.connect(peaking);
+                        peaking.connect(mainOut);
+                    }
+                } else {
+                    distortionNode.connect(mainOut);
+                }
+                
+                mainOut.connect(audioCtx.destination);
+
+                // 3. Ambient Noise
+                let atmoObj = null;
+                if(atmoToggle.checked && !isPreview) {
+                    atmoObj = startAtmo(audioCtx, env, audioCtx.destination);
+                }
+
+                // 4. Synthesize Gong
+                if (gongToggle.checked && !isPreview) {
+                    log("Spiele Gong...", "info");
+                    await playOriginalGong(env, audioCtx, effectInput);
+                }
+
+                // 5. Play AI Speech
+                log("Spiele Ansage ab...", "success");
+                const source = audioCtx.createBufferSource();
+                source.buffer = audioBuffer;
+                source.playbackRate.value = speedVal;
+                source.connect(effectInput);
+                
+                source.start(audioCtx.currentTime);
+                activeNodes.push(source);
+
+                source.onended = () => {
+                    log("Abgeschlossen.", "info");
+                    if(atmoObj) {
+                        atmoObj.gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1.5);
+                        setTimeout(() => atmoObj.source.stop(), 1500);
+                    }
+                    setTimeout(stopEngine, 500);
+                };
+
+            } catch (err) {
+                log(err.message, 'error');
+                stopEngine();
+            }
+        }
+
+        // Bind Buttons
+        playBtn.addEventListener('click', () => {
+            executeAudioPipeline(finalTextInput.value);
+        });
+
+        previewBtn.addEventListener('click', () => {
+            executeAudioPipeline("Vorschau. " + finalTextInput.value.split('.')[0] + ".", true);
+        });
+
+    </script>
+</body>
+</html>
